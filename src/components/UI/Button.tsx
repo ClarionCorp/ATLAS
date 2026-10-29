@@ -1,0 +1,133 @@
+'use client';
+
+import { forwardRef } from 'react';
+import { motion, HTMLMotionProps, type Transition } from 'framer-motion';
+import { CircleNotchIcon } from '@phosphor-icons/react';
+import { cn } from '../../core/styles/theme';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'surface' | 'success' | 'ghost' | 'danger' | 'danger-ghost' | 'secondary-ghost' | 'aimi';
+type ButtonSize = 'sm' | 'md' | 'lg';
+
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  iconLeft?: React.ReactNode;
+  iconRight?: React.ReactNode;
+  children?: React.ReactNode;
+}
+
+// Style Maps
+const variantStyles: Record<ButtonVariant, string> = {
+  primary: 'bg-zinc-700 text-white border border-zinc-600 hover:bg-zinc-600 hover:shadow-md active:bg-zinc-500',
+  secondary: 'bg-zinc-100 text-zinc-900 border border-zinc-300 hover:bg-zinc-300 hover:shadow-md active:bg-zinc-400',
+  'secondary-ghost': 'bg-transparent text-zinc-600/80 border border-transparent hover:border-zinc-600',
+  surface: 'bg-zinc-900 text-zinc-300 hover:text-zinc-100 border border-zinc-700 hover:bg-zinc-800',
+  success: 'bg-green-600/80 text-white hover:bg-green-600/60 hover:shadow-md active:bg-green-600/50',
+  ghost: 'bg-transparent text-zinc-300 border border-transparent hover:bg-zinc-700 hover:text-zinc-100 active:bg-zinc-800',
+  danger: 'bg-red-500 text-white border border-red-500 hover:brightness-110 hover:shadow-lg hover:shadow-red-500/20 active:brightness-90',
+  'danger-ghost': 'bg-transparent text-red-500 border border-transparent hover:bg-red-500/10 hover:text-red-500/80 active:bg-red-500/10',
+  aimi: 'bg-[#cf4da8] text-white border border-red-500 hover:brightness-110 hover:shadow-lg hover:shadow-red-500/20 active:brightness-90',
+};
+
+const sizeStyles: Record<ButtonSize, string> = {
+  sm: 'h-7 px-3 gap-1.5 text-sm rounded-md',
+  md: 'h-9 px-4 gap-2 text-sm rounded-md',
+  lg: 'h-11 px-5 gap-2.5 text-base rounded-lg',
+};
+
+// Motion Variants
+const motionProps = {
+  whileTap: { scale: 0.96 },
+  transition: { duration: 0.12, ease: [0.16, 1, 0.3, 1] } as Transition,
+};
+
+// Component
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', size = 'md', loading = false, disabled = false, fullWidth = false, iconLeft, iconRight, children, className, ...props }, ref) => {
+    const isDisabled = disabled || loading;
+
+    return (
+      <motion.button
+        ref={ref}
+        {...motionProps}
+        {...props}
+        disabled={isDisabled}
+        className={cn(
+          'inline-flex items-center justify-center font-medium select-none cursor-pointer outline-none transition-all',
+          'focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+          'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+          variantStyles[variant],
+          sizeStyles[size],
+          fullWidth && 'w-full',
+          className
+        )}
+      >
+        {loading
+          ? <CircleNotchIcon size={16} className="animate-spin shrink-0" />
+          : iconLeft && <span className="shrink-0 flex items-center">{iconLeft}</span>
+        }
+        {children && (
+          <span className={cn(loading && 'opacity-0 absolute')}>{children}</span>
+        )}
+        {!loading && iconRight && (
+          <span className="shrink-0 flex items-center">{iconRight}</span>
+        )}
+      </motion.button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
+
+
+// A square icon button for icon-only actions (toolbar, actions, etc.)
+interface IconButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  disabled?: boolean;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const iconSizeStyles: Record<ButtonSize, string> = {
+  sm: 'size-7 rounded-md',
+  md: 'size-9 rounded-md',
+  lg: 'size-11 rounded-lg',
+};
+
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ variant = 'ghost', size = 'md', loading = false, disabled = false, label, icon, className, ...props }, ref) => {
+    const isDisabled = disabled || loading;
+
+    return (
+      <motion.button
+        ref={ref}
+        {...motionProps}
+        {...props}
+        disabled={isDisabled}
+        aria-label={label}
+        title={label}
+        className={cn(
+          'inline-flex items-center justify-center shrink-0 cursor-pointer outline-none',
+          'transition-all duration-200',
+          'focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+          'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+          variantStyles[variant],
+          iconSizeStyles[size],
+          className
+        )}
+      >
+        {loading
+          ? <CircleNotchIcon size={16} className="animate-spin" />
+          : <span className="flex items-center justify-center">{icon}</span>
+        }
+      </motion.button>
+    );
+  }
+);
+
+IconButton.displayName = 'IconButton';

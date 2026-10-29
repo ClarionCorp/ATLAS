@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@custom-variant short (@media (max-height: 1080px));
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-hero {
+    background-image: none !important;
+    background: linear-gradient(to bottom, #006400, black);
+  }
+}
+
+@theme {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-accent: 0 0 20px #7C58F240;
+  --shadow-accent-sm: 0 0 8px #7C58F228;
+  --shadow-danger: 0 0 16px #FF5E4F30;
+  --shadow-focus: 0 0 0 3px #7C58F228;
+  --shadow-focus-danger: 0 0 0 3px #FF5E4F30;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
