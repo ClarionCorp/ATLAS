@@ -30,7 +30,7 @@ export function Console({ lines, className }: ConsoleProps) {
         className="flex-1 min-h-0 overflow-y-auto rounded-lg bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs text-zinc-300 whitespace-pre-wrap break-all"
       >
         {lines.length === 0
-          ? <span className="text-zinc-600">No output yet.</span>
+          ? <span className="text-zinc-700">Server is offline.</span>
           : lines.map((line, i) => <div key={i}>{line}</div>)
         }
       </div>

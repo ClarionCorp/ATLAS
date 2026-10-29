@@ -33,7 +33,7 @@ export function Select<T extends string>({ label, value, options, placeholder = 
             'w-full h-9 px-3 flex items-center justify-between gap-2 text-sm text-left cursor-pointer',
             'bg-zinc-800 border border-zinc-700 rounded-md outline-none',
             'transition-[border-color,box-shadow] duration-200',
-            'focus-visible:border-zinc-400 focus-visible:ring-3 focus-visible:ring-zinc-400/20',
+            'focus:border-zinc-600',
             'disabled:opacity-40 disabled:cursor-not-allowed',
             open && 'border-zinc-400'
           )}
