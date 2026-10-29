@@ -1,5 +1,5 @@
 local ModName = "ATLASHostMod"
-local ModVersion = "1.0.2"
+local ModVersion = "1.1.2"
 
 print(string.format("\n=== %s v%s Loaded ===\n", ModName, ModVersion))
 
@@ -9,6 +9,8 @@ print(string.format("\n=== %s v%s Loaded ===\n", ModName, ModVersion))
 
 local UEHelpers = require("UEHelpers")
 local GameData = require("gamedata")
+local Info = require("info")
+local Commands = require("commands")
 
 local DA = "/Game/Prometheus/DataAssets/"
 local GAME_MAPS = "/Game/Prometheus/Maps/GameMap/"
@@ -20,6 +22,13 @@ local PORT = 7777
 
 local function Log(fmt, ...)
     print(string.format("[%s] " .. fmt .. "\n", ModName, ...))
+end
+
+-- Logs and returns false, message: the failure result commands.jsonl reports back.
+local function Fail(fmt, ...)
+    local message = string.format(fmt, ...)
+    Log("%s", message)
+    return false, message
 end
 
 local function AssetPath(subPath)
@@ -402,17 +411,20 @@ RegisterConsoleCommandHandler("gameinfo", function(FullCommand, Parameters, Ar)
 end)
 
 -- Leave the hosted map, which ends the session and drops clients. (Clients leave with the engine's `disconnect`.)
-RegisterConsoleCommandHandler("forcestop", function(FullCommand, Parameters, Ar)
-    ExecuteInGameThread(function()
-        if not GetGameMode() then
-            Log("Not hosting a match; to leave a server, use disconnect")
-            return
-        end
-        Log("Ending hosted match, returning to main menu")
-        RunConsoleCommand("open " .. MAIN_MENU)
-    end)
+-- Must run on the game thread.
+local function ForceStop()
+    if not GetGameMode() then return Fail("Not hosting a match; to leave a server, use disconnect") end
+    Log("Ending hosted match, returning to main menu")
+    RunConsoleCommand("open " .. MAIN_MENU)
     return true
-end)
+end
+
+for _, name in ipairs({ "stop", "forcestop" }) do
+    RegisterConsoleCommandHandler(name, function(FullCommand, Parameters, Ar)
+        ExecuteInGameThread(ForceStop)
+        return true
+    end)
+end
 
 -- bAllPlayersLoggedIn is only ever set by GameLift's AllGameLiftPlayersJoined, which never fires here.
 for _, flag in ipairs(GameData.StartFlags) do
@@ -449,15 +461,9 @@ end
 -- Must run on the game thread.
 local function ForceStart()
     local gm = GetGameMode()
-    if not gm then
-        Log("PMGameModeGame not found (are you hosting?)")
-        return
-    end
+    if not gm then return Fail("PMGameModeGame not found (are you hosting?)") end
     -- EMatchPhase values; MatchPhases/PhaseName are defined further down the file.
-    if gm.CurrentMatchPhase ~= 0 then
-        Log("Match already past None (phase %d)", gm.CurrentMatchPhase)
-        return
-    end
+    if gm.CurrentMatchPhase ~= 0 then return Fail("Match already past None (phase %d)", gm.CurrentMatchPhase) end
 
     -- bAllPlayersLoaded needs every known player (including the host's own, which never reports) in the loaded set, so set it directly too.
     -- Nothing resets it, and TryToStartMatch only re-checks the flags.
@@ -478,10 +484,23 @@ local function ForceStart()
     end
 
     Log("Phase now: %d", gm.CurrentMatchPhase)
+    return true, "Phase now: " .. tostring(gm.CurrentMatchPhase)
 end
 
 RegisterConsoleCommandHandler("forcestart", function(FullCommand, Parameters, Ar)
     ExecuteInGameThread(ForceStart)
+    return true
+end)
+
+-- `gameinfo` then `forcestart`. Must run on the game thread.
+local function Start()
+    if not GetGameMode() then return Fail("PMGameModeGame not found (are you hosting?)") end
+    if not ApplyGameInfo({}) then return Fail("GameInfo failed; not starting") end
+    return ForceStart()
+end
+
+RegisterConsoleCommandHandler("start", function(FullCommand, Parameters, Ar)
+    ExecuteInGameThread(Start)
     return true
 end)
 
@@ -575,13 +594,15 @@ end)
 -- onGameThread: the caller is already running as a game-thread action (the tick).
 -- It must not queue another one: UE4SS runs its single, shared game-thread queue with std::remove_if,
 -- so appending to it from inside an action can reallocate the vector mid-iteration. That hung or crashed -atlasHost hosts at boot.
+local HostedMap, HostedFormat = nil, nil -- keys of the last map/format opened, for info.json
+local LastHostAt = nil -- os.time() of the last open, so auto host waits out a load already underway
+
 local function Host(mapKey, formatKey, role, onGameThread)
     if formatKey == "play" or formatKey == "spectate" then
         formatKey, role = nil, formatKey
     end
     if role and role ~= "play" and role ~= "spectate" then
-        Log("Unknown host role '%s' (use play or spectate)", role)
-        return
+        return Fail("Unknown host role '%s' (use play or spectate)", role)
     end
     HostPlays = role == "play"
 
@@ -590,27 +611,18 @@ local function Host(mapKey, formatKey, role, onGameThread)
 
     local map = GameData.Maps[mapKey]
     local format = GameData.Formats[formatKey]
-    if not map then
-        Log("Unknown map '%s'", mapKey)
-        return
-    end
-    if not format then
-        Log("Unknown format '%s'", formatKey)
-        return
-    end
+    if not map then return Fail("Unknown map '%s'", mapKey) end
+    if not format then return Fail("Unknown format '%s'", formatKey) end
 
     local function Open()
         local gi = GetGameInstance()
-        if not gi then
-            Log("PMGameInstance not found")
-            return
-        end
+        if not gi then return Fail("PMGameInstance not found") end
 
         local formatData = LoadData("GameFormatData/" .. format)
         local mapData = LoadData("GameMapData/" .. map.map)
         local terrainData = LoadData("GameTerrainData/" .. map.terrain)
         local omegaModData = LoadData("OmegaModData/" .. DEFAULT_OMEGA_MOD)
-        if not (formatData and mapData and terrainData and omegaModData) then return end
+        if not (formatData and mapData and terrainData and omegaModData) then return Fail("Failed to load game data") end
 
         gi.ChosenFormatData = formatData
         gi.ChosenMapData = mapData
@@ -621,14 +633,14 @@ local function Host(mapKey, formatKey, role, onGameThread)
         local url = GAME_MAPS .. map.level .. "?listen"
         Log("Opening %s (listen port: the engine's -port=, default %d)", url, PORT)
         RunConsoleCommand("open " .. url)
+        HostedMap, HostedFormat, LastHostAt = mapKey, formatKey, os.time()
         ReportGameState()
+        return true, string.format("Opening %s (%s)", mapKey, formatKey)
     end
 
-    if onGameThread then
-        Open()
-    else
-        ExecuteInGameThread(Open)
-    end
+    if onGameThread then return Open() end
+    ExecuteInGameThread(Open)
+    return true
 end
 
 -- Client -> server identity: once connected, ATLASClientMod calls ServerChangeName("LSID:<backend player id>:<username>[<tab><FPlayerPublicProfile as ImportText>]").
@@ -650,6 +662,7 @@ RegisterHook("/Script/Engine.PlayerController:ServerChangeName", function() end,
         -- The engine already applied the whole string as the name; replace it with just the username.
         gm:ChangeName(pc, name, false)
         Log("Identity: '%s' is backend player %s", name, id)
+        Info.AddPlayer(id, name)
     end)
     if not ok then Log("Identity hook error: %s", tostring(err)) end
 end)
@@ -669,29 +682,25 @@ local function ParsePhase(arg)
     return nil
 end
 
+-- Must run on the game thread.
 local function SetPhase(arg)
-    ExecuteInGameThread(function()
-        local gm = GetGameMode()
-        if not gm then
-            Log("PMGameModeGame not found (are you hosting?)")
-            return
-        end
-        if not arg then
-            Log("Current phase: %s. Usage: phase <name|number>", PhaseName(gm.CurrentMatchPhase))
-            return
-        end
-        local phase = ParsePhase(arg)
-        if not phase then
-            Log("Unknown phase '%s'", arg)
-            return
-        end
-        Log("Phase %s -> %s", PhaseName(gm.CurrentMatchPhase), PhaseName(phase))
-        gm:RequestNewMatchPhase(phase)
-    end)
+    local gm = GetGameMode()
+    if not gm then return Fail("PMGameModeGame not found (are you hosting?)") end
+    if not arg then
+        Log("Current phase: %s. Usage: phase <name|number>", PhaseName(gm.CurrentMatchPhase))
+        return true, PhaseName(gm.CurrentMatchPhase)
+    end
+    local phase = ParsePhase(arg)
+    if not phase then return Fail("Unknown phase '%s'", arg) end
+    local message = string.format("Phase %s -> %s", PhaseName(gm.CurrentMatchPhase), PhaseName(phase))
+    Log("%s", message)
+    gm:RequestNewMatchPhase(phase)
+    return true, message
 end
 
 RegisterConsoleCommandHandler("phase", function(FullCommand, Parameters, Ar)
-    SetPhase(Parameters[1])
+    local arg = Parameters[1]
+    ExecuteInGameThread(function() SetPhase(arg) end)
     return true
 end)
 
@@ -761,6 +770,8 @@ Log("Host config: autoHost=%s port=%s maxFps=%s map=%s format=%s role=%s minPlay
     tostring(HostConfig.setsToWin), tostring(HostConfig.goalsToWinSet),
     tostring(HostConfig.autoEnd), tostring(HostConfig.endGameDelaySeconds), tostring(HostConfig.emptyRestartSeconds))
 
+Info.Init(Log)
+
 -- Everything below runs from one 1s game-thread tick (see the end of the file), which looks up the game mode once and hands it to each check.
 -- Each check resets its own state when its phase isn't current.
 
@@ -773,7 +784,8 @@ local LastAutoHostAt = nil
 
 local function CheckAutoHost(gm)
     if gm then return end
-    if LastAutoHostAt and os.time() - LastAutoHostAt < AUTO_HOST_RETRY_SECONDS then return end
+    local function Recent(at) return at and os.time() - at < AUTO_HOST_RETRY_SECONDS end
+    if Recent(LastAutoHostAt) or Recent(LastHostAt) then return end
     -- A world with a game mode and our own controller in it (both come from the local controller).
     if not GetAuthorityGameMode() then return end
 
@@ -820,11 +832,7 @@ local function CheckAutoStart(gm, phase)
     AutoStartAt = nil
     AutoStartedFor = gm:GetAddress()
     Log("Auto start: starting with %d player(s)", count)
-    if ApplyGameInfo({}) then
-        ForceStart()
-    else
-        Log("Auto start: GameInfo failed; not starting")
-    end
+    Start()
 end
 
 -- Auto end: in EndGame a real server's EndGameSession shuts the process down through GameLift, which drops the clients back to their main menu.
@@ -892,6 +900,52 @@ if HostConfig.autoHost then Checks[#Checks + 1] = { "Auto host", CheckAutoHost }
 if (HostConfig.minPlayers or 0) > 0 then Checks[#Checks + 1] = { "Auto start", CheckAutoStart } end
 if HostConfig.autoEnd then Checks[#Checks + 1] = { "Auto end", CheckAutoEnd } end
 if (HostConfig.emptyRestartSeconds or 0) > 0 then Checks[#Checks + 1] = { "Empty restart", CheckEmptyRestart } end
+
+-- Commands from $TEMP/ATLAS/commands.jsonl (see commands.lua), one per tick, with results in info.json.
+-- Same names and args as the console commands. They run on the tick's game thread.
+local function RequireGameMode()
+    if not GetGameMode() then return Fail("PMGameModeGame not found (are you hosting?)") end
+    return true
+end
+
+Commands.Init(Log, {
+    host = function(map, format, role)
+        local function Lower(s) return s and s:lower() end
+        return Host(Lower(map), Lower(format), Lower(role), true)
+    end,
+    gameinfo = function(...)
+        if not RequireGameMode() then return false, "Not hosting" end
+        return ApplyGameInfo({ ... })
+    end,
+    forcestart = ForceStart,
+    start = Start,
+    stop = ForceStop,
+    forcestop = ForceStop,
+    phase = SetPhase,
+}, Info.AddCommandResult)
+Checks[#Checks + 1] = { "Commands", function() Commands.Step() end }
+
+-- Match state for info.json; Info only writes when it changed.
+local function UpdateInfo(gm, phase)
+    local hostAddress = GetHostAddress()
+    local players = {}
+    for _, ps in ipairs(GetPlayerStates(gm)) do
+        if ps:GetAddress() ~= hostAddress then
+            local ok, name = pcall(function() return Str(ps.PlayerNamePrivate) end)
+            players[#players + 1] = { playerId = Str(ps.PMPlayerId), username = ok and name or Info.null }
+        end
+    end
+    Info.SetMatch({
+        hosting = gm ~= nil,
+        map = gm and HostedMap or Info.null,
+        format = gm and HostedFormat or Info.null,
+        phase = gm and PhaseName(phase) or Info.null,
+        setsToWin = MatchRules.setsToWin or Info.null,
+        goalsToWinSet = MatchRules.goalsToWinSet or Info.null,
+        players = players,
+    })
+end
+Checks[#Checks + 1] = { "Info", UpdateInfo }
 
 -- Tick timing, since a headless host can't show its own hitches: each tick runs inside one server frame, so a slow one stalls replication for every client.
 -- Logs any tick over SLOW_TICK_MS, plus a summary every TICK_REPORT_SECONDS.

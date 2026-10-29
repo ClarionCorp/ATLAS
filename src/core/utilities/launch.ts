@@ -41,6 +41,7 @@ export async function startHostGame(gameDirectory: string) {
     `-atlasMaxRounds=${hostOpts.maxRounds}`,
     `-atlasMaxFps=${hostOpts.maxFps}`,
     '-atlasEmptyRestart=3',
+    '-atlasEndDelay=2',
     '-atlasAutoEnd=1',
     '-nullrhi',
     '-nosound'
