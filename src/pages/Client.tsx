@@ -5,6 +5,7 @@ import { Button, IconButton } from '../components/UI/Button';
 import { ConfirmModal } from '../components/UI/ConfirmModal';
 import { useToast } from '../components/UI/Toast';
 import { InstallModal } from '../components/InstallModal';
+import { WaitingModal } from '../components/UI/WaitingModal';
 import { getAppSettings, getClientOptions } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
 import { launchGame } from '../core/utilities/launch';
@@ -18,6 +19,7 @@ export default function ClientPage() {
   const [uninstallOpen, setUninstallOpen] = useState(false);
   const [uninstalling, setUninstalling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [launching, setLaunching] = useState(false);
   const isLinux = platform() !== 'windows';
 
   async function copyLaunchOptions() {
@@ -58,11 +60,14 @@ export default function ClientPage() {
   }
 
   async function play() {
+    setLaunching(true);
     try {
       await launchGame();
+      setTimeout(() => setLaunching(false), 10_000);
     } catch (e) {
       console.error(`[Launch] Failed to start the game!`, e);
       toast(`Failed to launch: ${e}`, 'error');
+      setLaunching(false);
     }
   }
 
@@ -81,6 +86,12 @@ export default function ClientPage() {
           </div>
         </div>
       )}
+      <WaitingModal
+        open={launching}
+        title="Waiting for Steam..."
+        description="This may take a moment to start. Sit tight."
+        onDismiss={() => setLaunching(false)}
+      />
       <InstallModal open={installOpen} mod="client" gameDirectory={gameDirectory} onClose={closeInstall} />
       <ConfirmModal
         open={uninstallOpen}
