@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:windows": "tauri build",
+    "build:linux": "NO_STRIP=true tauri build",
     "tauri": "tauri",
     "studio": "drizzle-kit studio",
     "gen": "drizzle-kit generate"
