@@ -44,6 +44,7 @@ export const clientOptions = sqliteTable("clientOptions", {
 export const serverStatus = sqliteTable("serverStatus", {
   id: integer("id").primaryKey(),
 
+  processId: integer("processId"),
   state: text("state").$type<Server.Status>().notNull().default('OFFLINE'),
   players: text("players", { mode: 'json' }), // morph into a type later
 

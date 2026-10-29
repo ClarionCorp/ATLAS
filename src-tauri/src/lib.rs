@@ -1,5 +1,7 @@
 use tauri::Manager;
 
+mod host;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -27,12 +29,13 @@ pub fn run() {
             Ok(())
         })
 
+        .manage(host::HostState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
-        .invoke_handler(tauri::generate_handler![greet, extract_zip])
+        .invoke_handler(tauri::generate_handler![greet, extract_zip, host::start_host, host::stop_host, host::host_pid])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
