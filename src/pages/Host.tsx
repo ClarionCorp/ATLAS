@@ -8,6 +8,8 @@ import { Console } from '../components/Host/Console';
 import { getAppSettings } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
 import { getHostPid, startHostGame, stopHostGame } from '../core/utilities/launch';
+import { getServerInfo, onServerInfoUpdate } from '../core/utilities/serverInfo';
+import { Server } from '../types/server';
 
 const MAX_LOG_LINES = 2000;
 
@@ -31,25 +33,27 @@ export default function HostPage() {
   const [hostPid, setHostPid] = useState<number | null>(null);
   const [toggling, setToggling] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [serverInfo, setServerInfo] = useState<Server.Info | null>(null);
   const running = hostPid !== null;
 
   useEffect(() => {
     getAppSettings().then(settings => setGameDirectory(settings?.gameDirectory ?? null));
     // The host keeps running if this page is left, so pick it back up
     getHostPid().then(setHostPid);
+    getServerInfo().then(setServerInfo);
 
-    const unlistenLog = listen<string>('host-log', e => {
-      setLogs(prev => [...prev, e.payload].slice(-MAX_LOG_LINES));
-    });
-    const unlistenExit = listen<number | null>('host-exited', e => {
-      setHostPid(null);
-      setLogs(prev => [...prev, `[ATLAS] Host exited (code ${e.payload ?? 'unknown'})`]);
-    });
+    const listeners = Promise.all([
+      listen<string>('host-log', e => {
+        setLogs(prev => [...prev, e.payload].slice(-MAX_LOG_LINES));
+      }),
+      listen<number | null>('host-exited', e => {
+        setHostPid(null);
+        setLogs(prev => [...prev, `[ATLAS] Host exited (code ${e.payload ?? 'unknown'})`]);
+      }),
+      onServerInfoUpdate(setServerInfo),
+    ]);
 
-    return () => {
-      unlistenLog.then(f => f());
-      unlistenExit.then(f => f());
-    };
+    return () => { listeners.then(fns => fns.forEach(fn => fn())); };
   }, []);
 
   async function toggleHost() {

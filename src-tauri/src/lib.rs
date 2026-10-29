@@ -1,5 +1,6 @@
 use tauri::Manager;
 
+mod file_watcher;
 mod host;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -26,6 +27,7 @@ pub fn run() {
                     encryption: None,
                 })
             )?;
+            file_watcher::start_file_watcher(app.handle().clone());
             Ok(())
         })
 
@@ -35,7 +37,14 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
-        .invoke_handler(tauri::generate_handler![greet, extract_zip, host::start_host, host::stop_host, host::host_pid])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            extract_zip,
+            host::start_host,
+            host::stop_host,
+            host::host_pid,
+            file_watcher::get_server_info,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

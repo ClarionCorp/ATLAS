@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { Server } from "../../types/server";
+import { Phase } from "../../types/game";
 
 // Only one row that stores basic app settings
 export const appSettings = sqliteTable("appSettings", {
@@ -46,7 +47,8 @@ export const serverStatus = sqliteTable("serverStatus", {
 
   processId: integer("processId"),
   state: text("state").$type<Server.Status>().notNull().default('OFFLINE'),
-  players: text("players", { mode: 'json' }), // morph into a type later
+  players: text("players", { mode: 'json' }).$type<Server.Players[]>().default([]),
+  phase: text("match_phase").$type<Phase>().default('None'),
 
   createdAt: integer("created_at", { mode: "timestamp" }).default(new Date()),
 })
