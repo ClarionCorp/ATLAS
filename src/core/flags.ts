@@ -7,4 +7,4 @@ export const maxRounds = '-lsmaxrounds';
 export const logging = '-log';
 export const headless = '-nullrhi -nosound';
 
-export const linuxUE4SS = 'WINEDLLOVERRIDES="dwmapi=n,b"'; // prefixes %command%
+export const linuxUE4SS = 'WINEDLLOVERRIDES="dwmapi=n,b" %command%';
