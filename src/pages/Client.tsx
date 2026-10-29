@@ -8,10 +8,10 @@ import { InstallModal } from '../components/InstallModal';
 import { WaitingModal } from '../components/UI/WaitingModal';
 import { getAppSettings, getClientOptions } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
-import { launchGame } from '../core/utilities/launch';
 import { linuxUE4SS } from '../core/flags';
 import { renameWindow } from '../core/utilities/app';
 import { version } from '../core/constants';
+import { launchClientGame } from '../core/utilities/launch';
 
 export default function ClientPage() {
   const { toast } = useToast();
@@ -65,7 +65,7 @@ export default function ClientPage() {
   async function play() {
     setLaunching(true);
     try {
-      await launchGame();
+      await launchClientGame();
       setTimeout(() => setLaunching(false), 10_000);
     } catch (e) {
       console.error(`[Launch] Failed to start the game!`, e);
