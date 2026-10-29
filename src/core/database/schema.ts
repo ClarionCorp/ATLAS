@@ -3,8 +3,7 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 // Only one row that stores basic app settings
 export const appSettings = sqliteTable("appSettings", {
   id: integer("id").primaryKey(),
-
-  createdAt: integer("created_at", { mode: "timestamp" }),
+  gameDirectory: text("game_directory"), // no default, asked on startup if null
 });
 
 export const hostOptions = sqliteTable("hostOptions", {
