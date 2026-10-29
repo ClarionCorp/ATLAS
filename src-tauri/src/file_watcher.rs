@@ -17,7 +17,7 @@ pub struct FileChangeEvent {
 // Resolves the temp directory the game actually writes to.
 // On Windows, this is the normal system temp dir.
 // On Linux, the game writes into its Proton prefix's fake windows temp dir instead.
-fn resolve_temp_dir() -> PathBuf {
+pub(crate) fn resolve_temp_dir() -> PathBuf {
     if cfg!(target_os = "windows") {
         return std::env::temp_dir().join("ATLAS");
     }

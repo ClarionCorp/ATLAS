@@ -5,7 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { join } from "@tauri-apps/api/path";
 import { steam_app_id } from "../constants";
 import { listen } from "@tauri-apps/api/event";
-import { getClientOptions, getHostOptions, upsertServerStatus } from "../database/queries";
+import { getClientOptions, getHostOptions, clearServerPlayers, upsertServerStatus } from "../database/queries";
+import { sleep } from "./app";
 
 // Registered once at module load so the PID gets cleared even if the Host page isn't open
 listen('host-exited', () => upsertServerStatus({ processId: null }));
@@ -53,7 +54,17 @@ export async function startHostGame(gameDirectory: string) {
   return pid;
 }
 
-export const stopHostGame = () => invoke<void>('stop_host');
+export async function stopHostGame() {
+  await sendHostCommand('forcestop'); // disconnect all players and shutdown session
+  await clearServerPlayers();
+  await sleep(3000);
+  invoke<void>('stop_host'); // kill application pid
+}
 
 // Returns the host's PID if it's running, otherwise null
 export const getHostPid = () => invoke<number | null>('host_pid');
+
+// Appends a command to TEMP/ATLAS/commands.jsonl for the host mod to pick up. Returns the command's ID.
+// e.g. sendHostCommand('host', ['drums', 'normal']) or sendHostCommand('start')
+export const sendHostCommand = (command: string, args: string[] = []) =>
+  invoke<string>('send_host_command', { command, args });

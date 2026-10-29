@@ -113,7 +113,12 @@ export default function HostPage() {
       <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-[3fr_2fr] gap-4">
         <MatchSettings running={running} />
         <Players players={players} className="col-span-2" />
-        <Console lines={logs} className="col-span-3" />
+        <Console
+          lines={logs}
+          running={running}
+          onLocalLine={line => setLogs(prev => [...prev, line].slice(-MAX_LOG_LINES))}
+          className="col-span-3"
+        />
       </div>
 
       <InstallModal open={installOpen} mod="host" gameDirectory={gameDirectory} onClose={() => setInstallOpen(false)} />

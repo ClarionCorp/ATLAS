@@ -65,6 +65,13 @@ export async function upsertServerStatus(
   }).run();
 }
 
+export async function clearServerPlayers() {
+  return db.insert(serverStatus).values({ id: 1, players: [] }).onConflictDoUpdate({
+    target: serverStatus.id,
+    set: { players: [] },
+  }).run();
+}
+
 export async function ensureTables() {
   await db.insert(appSettings).values({ id: 1 }).onConflictDoNothing({ target: appSettings.id }).run();
 }

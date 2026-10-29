@@ -1,5 +1,6 @@
 use tauri::Manager;
 
+mod commands;
 mod file_watcher;
 mod host;
 
@@ -44,6 +45,7 @@ pub fn run() {
             host::stop_host,
             host::host_pid,
             file_watcher::get_server_info,
+            commands::send_host_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
