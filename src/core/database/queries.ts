@@ -6,6 +6,11 @@ export async function getAppSettings() {
   return rows[0] ?? null;
 }
 
+export async function getClientOptions() {
+  const rows = await db.select().from(clientOptions).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function upsertAppSettings(
   data: Partial<Pick<typeof appSettings.$inferInsert,
     'gameDirectory'
