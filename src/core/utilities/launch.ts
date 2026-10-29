@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { join } from "@tauri-apps/api/path";
 import { steam_app_id } from "../constants";
 import { listen } from "@tauri-apps/api/event";
-import { getClientOptions, upsertServerStatus } from "../database/queries";
+import { getClientOptions, getHostOptions, upsertServerStatus } from "../database/queries";
 
 // Registered once at module load so the PID gets cleared even if the Host page isn't open
 listen('host-exited', () => upsertServerStatus({ processId: null }));
@@ -25,11 +25,25 @@ export async function launchClientGame() {
 
 // Spawns the host game directly (no Steam). Returns the PID.
 // The backend streams UE4SS.log as "host-log" events and emits "host-exited" when the process closes.
-export async function startHostGame(gameDirectory: string, extraArgs: string[] = []) {
+export async function startHostGame(gameDirectory: string) {
+  const hostOpts = await getHostOptions();
+
   const win64 = await join(gameDirectory, 'OmegaStrikers/Binaries/Win64');
   const exePath = await join(win64, 'OmegaStrikers-Win64-Shipping.exe');
   const logPath = await join(win64, 'UE4SS.log');
-  const args = ['-atlasHost', ...extraArgs];
+  const args = [
+    '-atlasHost',
+    `-atlasMap=${hostOpts.mapId}`,
+    `-atlasMode=${hostOpts.queueId}`,
+    `-atlasMinPlayers=${hostOpts.minPlayers}`,
+    `-atlasMaxSets=${hostOpts.maxSets}`,
+    `-atlasMaxRounds=${hostOpts.maxRounds}`,
+    `-atlasMaxFps=${hostOpts.maxFps}`,
+    '-atlasEmptyRestart=3',
+    '-atlasAutoEnd=1',
+  ];
+
+  if (hostOpts.additionalOpts) { args.push(hostOpts.additionalOpts) };
 
   console.log(`Starting host: ${exePath} ${args.join(' ')}`);
   const pid = await invoke<number>('start_host', { exePath, args, logPath });

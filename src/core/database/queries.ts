@@ -11,6 +11,11 @@ export async function getClientOptions() {
   return rows[0] ?? null;
 }
 
+export async function getHostOptions() {
+  const rows = await db.select().from(hostOptions).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function upsertAppSettings(
   data: Partial<Pick<typeof appSettings.$inferInsert,
     'gameDirectory'
@@ -31,11 +36,6 @@ export async function upsertClientOptions(
     target: clientOptions.id,
     set: data,
   }).run();
-}
-
-export async function getHostOptions() {
-  const rows = await db.select().from(hostOptions).limit(1);
-  return rows[0] ?? null;
 }
 
 export async function upsertHostOptions(
