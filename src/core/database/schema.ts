@@ -4,6 +4,7 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 export const appSettings = sqliteTable("appSettings", {
   id: integer("id").primaryKey(),
   gameDirectory: text("game_directory"), // no default, asked on startup if null
+  ue4ssInstalled: integer("ue4ss_installed", { mode: 'boolean' }).notNull().default(false),
 });
 
 export const hostOptions = sqliteTable("hostOptions", {
@@ -29,6 +30,8 @@ export const clientOptions = sqliteTable("clientOptions", {
   autoConnect: integer("auto_connect", { mode: 'boolean' }).notNull().default(false),
 
   showLog: integer("show_log", { mode: 'boolean' }).notNull().default(false),
+  additionalOpts: text("additional_launch_opts"),
+  modVersion: text("mod_version"),
 
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(new Date()).$onUpdateFn(() => new Date()),
   createdAt: integer("created_at", { mode: "timestamp" }).default(new Date()),
