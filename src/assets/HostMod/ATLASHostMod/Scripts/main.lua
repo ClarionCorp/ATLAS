@@ -1,5 +1,5 @@
 local ModName = "ATLASHostMod"
-local ModVersion = "1.0.0"
+local ModVersion = "1.0.2"
 
 print(string.format("\n=== %s v%s Loaded ===\n", ModName, ModVersion))
 
@@ -148,12 +148,19 @@ local function GetHostAddress()
     return host and host:GetAddress()
 end
 
+-- The host never logs in, so its PlayerState gets fixed credentials instead of whatever the engine assigned.
+local HOST_USERNAME = "ATLASHost"
+local HOST_PLAYER_ID = "00000000-0000-0000-0000-000000000000"
+
 local function ApplyHostRole()
     local ps = GetHostPlayerState()
     if not ps then return false end
     ps.bIsSpectator = not HostPlays
     ps.bOnlySpectator = not HostPlays
-    Log("Host %s (bIsSpectator=%s)", HostPlays and "plays" or "spectates", tostring(ps.bIsSpectator))
+    ps.PMPlayerId = FName(HOST_PLAYER_ID)
+    local gm = GetGameMode()
+    if gm then gm:ChangeName(GetLocalPlayerController(), HOST_USERNAME, false) end
+    Log("Host %s as %s (bIsSpectator=%s)", HostPlays and "plays" or "spectates", HOST_USERNAME, tostring(ps.bIsSpectator))
     return true
 end
 
@@ -360,7 +367,6 @@ local function ApplyGameInfo(extraIds)
         else
             local id = Str(ps.PMPlayerId)
             -- GetPlayerName() returns an FString by value, which UE4SS 3.0.1 hands back as garbage.
-            -- A playing host's own PlayerState never travels with ?Name=, so it shows its account ID.
             local ok, name = pcall(function() return Str(ps.PlayerNamePrivate) end)
             if not ok or name == "" then name = id end
             Log("Player '%s' PMPlayerId='%s'", name, id)
@@ -700,7 +706,9 @@ RegisterKeyBind(Key.F8, function()
 end)
 
 -- Host settings: launch args (case-insensitive), else these defaults. Only -atlasHost turns auto-hosting on.
---   -atlasHost[=<map>[,<format>][,<play|spectate>]]
+--   -atlasHost                auto-host
+--   -atlasMap=<map>           map key (see gamedata.lua)
+--   -atlasMode=<format>       format key (see gamedata.lua)
 --   -atlasMinPlayers=<n>      auto start once n players joined (0 = start manually)
 --   -atlasStartDelay=<s>      wait after reaching minPlayers
 --   -atlasMaxSets=<n>         sets to win the match
@@ -719,11 +727,14 @@ local function LoadHostConfig()
         if value == nil then return default end
         return value
     end
+    local function Text(name, default)
+        return cmdLine:match("%-" .. name .. "=(%w+)") or default
+    end
 
     local config = {
-        autoHost = cmdLine:find("%-atlashost") ~= nil,
-        map = DEFAULT_MAP,
-        format = DEFAULT_FORMAT,
+        autoHost = cmdLine:find("%-atlashost%f[^%w]") ~= nil,
+        map = Text("atlasmap", DEFAULT_MAP),
+        format = Text("atlasmode", DEFAULT_FORMAT),
         role = "spectate",
         minPlayers = Num("atlasminplayers", 6),
         startDelaySeconds = Num("atlasstartdelay", 5),
@@ -736,14 +747,6 @@ local function LoadHostConfig()
         -- The engine's own -port=<n> sets the listen port; read only to log it.
         port = Num("port", PORT),
     }
-    local hostArg = cmdLine:match("%-atlashost=([%w,]+)")
-    if hostArg then
-        local parts = {}
-        for part in hostArg:gmatch("[^,]+") do parts[#parts + 1] = part end
-        config.map = parts[1] or config.map
-        config.format = parts[2] or config.format
-        config.role = parts[3] or config.role
-    end
     return config
 end
 
