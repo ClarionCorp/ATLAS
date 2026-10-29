@@ -5,6 +5,7 @@ import { ConfirmModal } from '../components/UI/ConfirmModal';
 import { useToast } from '../components/UI/Toast';
 import { InstallModal } from '../components/InstallModal';
 import { Console } from '../components/Host/Console';
+import { StatusIndicator } from '../components/Host/StatusIndicator';
 import { getAppSettings } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
 import { getHostPid, startHostGame, stopHostGame } from '../core/utilities/launch';
@@ -35,6 +36,7 @@ export default function HostPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [serverInfo, setServerInfo] = useState<Server.Info | null>(null);
   const running = hostPid !== null;
+  const status: Server.Status = !running ? 'OFFLINE' : serverInfo ? 'ONLINE' : 'STARTING';
 
   useEffect(() => {
     getAppSettings().then(settings => setGameDirectory(settings?.gameDirectory ?? null));
@@ -48,6 +50,7 @@ export default function HostPage() {
       }),
       listen<number | null>('host-exited', e => {
         setHostPid(null);
+        setServerInfo(null);
         setLogs(prev => [...prev, `[ATLAS] Host exited (code ${e.payload ?? 'unknown'})`]);
       }),
       onServerInfoUpdate(setServerInfo),
@@ -64,6 +67,7 @@ export default function HostPage() {
         await stopHostGame();
       } else {
         setLogs([]);
+        setServerInfo(null);
         setHostPid(await startHostGame(gameDirectory));
       }
     } catch (e) {
@@ -97,12 +101,14 @@ export default function HostPage() {
         </Button>
         <Button size="lg" className="w-40" disabled={!gameDirectory || running} onClick={() => setInstallOpen(true)}>Install / Update</Button>
         <Button size="lg" className="w-40" disabled={!gameDirectory || running} loading={uninstalling} onClick={() => setUninstallOpen(true)}>Uninstall</Button>
+        <div className="ml-auto self-center">
+          <StatusIndicator status={status} />
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-2 gap-4">
-        <ModuleSkeleton title="Server Status" />
         <ModuleSkeleton title="Match Settings" />
-        <ModuleSkeleton title="Players" />
+        <ModuleSkeleton title="Players" className="col-span-2" />
         <Console lines={logs} className="col-span-3" />
       </div>
 
