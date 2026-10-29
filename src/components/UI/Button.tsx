@@ -21,7 +21,7 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
 
 // Style Maps
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-zinc-700 text-white border border-zinc-600 hover:bg-zinc-600 hover:shadow-md active:bg-zinc-500',
+  primary: 'bg-zinc-800 text-white border border-zinc-800 hover:bg-zinc-900 hover:shadow-md',
   secondary: 'bg-zinc-100 text-zinc-900 border border-zinc-300 hover:bg-zinc-300 hover:shadow-md active:bg-zinc-400',
   'secondary-ghost': 'bg-transparent text-zinc-600/80 border border-transparent hover:border-zinc-600',
   surface: 'bg-zinc-900 text-zinc-300 hover:text-zinc-100 border border-zinc-700 hover:bg-zinc-800',
