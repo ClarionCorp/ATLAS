@@ -1,7 +1,7 @@
 // UE4SS + ATLAS mod installer for the client and host
 
 import { dirname, join, tempDir } from "@tauri-apps/api/path";
-import { exists, mkdir, readTextFile, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, readTextFile, remove, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { fetch } from "@tauri-apps/plugin-http";
 import { upsertClientOptions, upsertHostOptions } from "../database/queries";
@@ -114,3 +114,18 @@ export const installClientMod = (gameDirectory: string, onProgress?: InstallProg
 
 export const installHostMod = (gameDirectory: string, onProgress?: InstallProgressCallback) =>
   installMod(gameDirectory, 'host', onProgress);
+
+// Removes UE4SS and every mod with it, so both client and host mod versions get cleared
+export async function uninstallUE4SS(gameDirectory: string) {
+  const win64 = await getWin64Dir(gameDirectory);
+
+  for (const path of ['dwmapi.dll', 'UE4SS.dll', 'Mods/ATLASHostMod', 'Mods/ATLASClientMod']) {
+    const fullPath = await join(win64, path);
+    if (await exists(fullPath)) {
+      await remove(fullPath, { recursive: true });
+    }
+  }
+
+  await upsertClientOptions({ modVersion: null });
+  await upsertHostOptions({ modVersion: null });
+}

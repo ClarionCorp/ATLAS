@@ -23,19 +23,19 @@ export function ConfirmModal({ open, title, description, confirmLabel = 'Confirm
         >
           <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
           <motion.div
-            className="relative z-10 w-80 rounded-xl bg-zinc-900 border border-zinc-800 shadow-xl p-5 flex flex-col gap-4"
+            className="relative z-10 w-1/3 rounded-xl bg-zinc-900 border border-zinc-800 shadow-xl p-5 flex flex-col gap-4"
             initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-zinc-100">{title}</span>
-              <span className="text-xs text-zinc-500">{description}</span>
+              <span className="text-md font-semibold text-zinc-100">{title}</span>
+              <span className="text-sm text-zinc-500">{description}</span>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-              <Button variant="danger" size="sm" onClick={onConfirm}>{confirmLabel}</Button>
+              <Button variant="ghost" size="md" onClick={onCancel}>Cancel</Button>
+              <Button variant="danger" size="md" onClick={onConfirm}>{confirmLabel}</Button>
             </div>
           </motion.div>
         </motion.div>
