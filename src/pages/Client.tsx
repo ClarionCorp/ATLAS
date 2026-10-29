@@ -10,6 +10,8 @@ import { getAppSettings, getClientOptions } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
 import { launchGame } from '../core/utilities/launch';
 import { linuxUE4SS } from '../core/flags';
+import { renameWindow } from '../core/utilities/app';
+import { version } from '../core/constants';
 
 export default function ClientPage() {
   const { toast } = useToast();
@@ -34,6 +36,7 @@ export default function ClientPage() {
   }
 
   useEffect(() => {
+    renameWindow(`ATLAS v${version} - Client`);
     getAppSettings().then(settings => setGameDirectory(settings?.gameDirectory ?? null));
     loadModVersion();
   }, []);

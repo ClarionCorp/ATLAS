@@ -23,23 +23,31 @@ export type ModId = 'client' | 'host';
 type BundledMod = {
   name: string;
   files: Record<string, string>; // keyed by path inside the mod folder (e.g. "Scripts/main.lua")
+  binaries: Record<string, string>; // same keys (e.g. "dlls/main.dll"), values are bundled asset URLs
   version: string | null;
 };
 
 const parseVersion = (lua: string) =>
   lua.match(/local ModVersion\s*=\s*"([^"]+)"/)?.[1] ?? null;
 
-function bundleMod(name: string, glob: Record<string, string>): BundledMod {
-  const files = Object.fromEntries(
-    Object.entries(glob).map(([path, source]) => [path.split(`${name}/`)[1], source])
-  );
-  return { name, files, version: parseVersion(files['Scripts/main.lua'] ?? '') };
+const relativeTo = (name: string, glob: Record<string, string>) =>
+  Object.fromEntries(Object.entries(glob).map(([path, value]) => [path.split(`${name}/`)[1], value]));
+
+function bundleMod(name: string, sources: Record<string, string>, binaries: Record<string, string>): BundledMod {
+  const files = relativeTo(name, sources);
+  return { name, files, binaries: relativeTo(name, binaries), version: parseVersion(files['Scripts/main.lua'] ?? '') };
 }
 
-// import.meta.glob only takes literal patterns, so each mod needs its own call
+// import.meta.glob only takes literal patterns, so each mod needs its own calls
 export const MODS: Record<ModId, BundledMod> = {
-  client: bundleMod('ATLASClientMod', import.meta.glob<string>('../../assets/ClientMod/ATLASClientMod/**/*.lua', { query: '?raw', import: 'default', eager: true })),
-  host: bundleMod('ATLASHostMod', import.meta.glob<string>('../../assets/HostMod/ATLASHostMod/**/*.lua', { query: '?raw', import: 'default', eager: true })),
+  client: bundleMod('ATLASClientMod',
+    import.meta.glob<string>('../../assets/ClientMod/ATLASClientMod/**/*.lua', { query: '?raw', import: 'default', eager: true }),
+    import.meta.glob<string>('../../assets/ClientMod/ATLASClientMod/**/*.dll', { query: '?url', import: 'default', eager: true }),
+  ),
+  host: bundleMod('ATLASHostMod',
+    import.meta.glob<string>('../../assets/HostMod/ATLASHostMod/**/*.lua', { query: '?raw', import: 'default', eager: true }),
+    import.meta.glob<string>('../../assets/HostMod/ATLASHostMod/**/*.dll', { query: '?url', import: 'default', eager: true }),
+  ),
 };
 
 const getWin64Dir = (gameDirectory: string) => join(gameDirectory, 'OmegaStrikers/Binaries/Win64');
@@ -96,6 +104,15 @@ export async function installMod(gameDirectory: string, modId: ModId, onProgress
       const target = await join(modDir, relativePath);
       await mkdir(await dirname(target), { recursive: true });
       await writeTextFile(target, source);
+    }
+    // Binaries are bundled as asset URLs, so read them back through the webview's own fetch
+    for (const [relativePath, url] of Object.entries(mod.binaries)) {
+      const response = await window.fetch(url);
+      if (!response.ok) throw new Error(`Failed to read bundled ${relativePath}: ${response.status}`);
+
+      const target = await join(modDir, relativePath);
+      await mkdir(await dirname(target), { recursive: true });
+      await writeFile(target, new Uint8Array(await response.arrayBuffer()));
     }
     // UE4SS loads any mod folder containing enabled.txt, no mods.txt entry needed
     await writeTextFile(await join(modDir, 'enabled.txt'), '');

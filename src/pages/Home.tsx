@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useNavigate } from 'react-router-dom';
 import { linux_default_gamedir, version, windows_default_gamedir } from '../core/constants';
 import { Button } from '../components/UI/Button';
@@ -8,10 +7,11 @@ import { ensureTables, getAppSettings, upsertAppSettings } from '../core/databas
 import { homeDir, join } from '@tauri-apps/api/path';
 import { platform } from "@tauri-apps/plugin-os";
 import { exists } from '@tauri-apps/plugin-fs';
+import { renameWindow } from '../core/utilities/app';
 
 // Returns false if the game directory still needs to be picked by the user
 async function loadData() {
-  await getCurrentWindow().setTitle(`ATLAS v${version}`);
+  await renameWindow(`ATLAS v${version}`);
   await ensureTables();
 
   const appSettings = await getAppSettings();
