@@ -16,6 +16,11 @@ export async function getHostOptions() {
   return rows[0] ?? null;
 }
 
+export async function getServerStatus() {
+  const rows = await db.select().from(serverStatus).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function upsertAppSettings(
   data: Partial<Pick<typeof appSettings.$inferInsert,
     'gameDirectory'
@@ -51,7 +56,7 @@ export async function upsertHostOptions(
 
 export async function upsertServerStatus(
   data: Partial<Pick<typeof serverStatus.$inferInsert,
-    'processId'
+    'processId' | 'players'
   >>
 ) {
   return db.insert(serverStatus).values({ id: 1, ...data }).onConflictDoUpdate({

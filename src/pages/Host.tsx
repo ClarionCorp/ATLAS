@@ -7,7 +7,8 @@ import { InstallModal } from '../components/InstallModal';
 import { Console } from '../components/Host/Console';
 import { StatusIndicator } from '../components/Host/StatusIndicator';
 import { MatchSettings } from '../components/Host/MatchSettings';
-import { getAppSettings } from '../core/database/queries';
+import { Players } from '../components/Host/Players';
+import { getAppSettings, getServerStatus, upsertServerStatus } from '../core/database/queries';
 import { uninstallUE4SS } from '../core/utilities/ue4ss';
 import { getHostPid, startHostGame, stopHostGame } from '../core/utilities/launch';
 import { getServerInfo, onServerInfoUpdate } from '../core/utilities/serverInfo';
@@ -16,16 +17,6 @@ import { renameWindow } from '../core/utilities/app';
 import { version } from '../core/constants';
 
 const MAX_LOG_LINES = 2000;
-
-// Placeholder for a control panel module until it gets built out
-function ModuleSkeleton({ title, className }: { title: string; className?: string }) {
-  return (
-    <div className={`rounded-xl bg-zinc-900 border border-zinc-800 p-4 flex flex-col gap-3 ${className ?? ''}`}>
-      <span className="text-sm font-semibold text-zinc-400">{title}</span>
-      <div className="flex-1 rounded-lg border-2 border-dashed border-zinc-800" />
-    </div>
-  );
-}
 
 export default function HostPage() {
   const { toast } = useToast();
@@ -38,6 +29,7 @@ export default function HostPage() {
   const [toggling, setToggling] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [serverInfo, setServerInfo] = useState<Server.Info | null>(null);
+  const [players, setPlayers] = useState<Server.Players[]>([]);
   const running = hostPid !== null;
   const status: Server.Status = !running ? 'OFFLINE' : serverInfo ? 'ONLINE' : 'STARTING';
 
@@ -57,11 +49,19 @@ export default function HostPage() {
         setServerInfo(null);
         setLogs(prev => [...prev, `[ATLAS] Host exited (code ${e.payload ?? 'unknown'})`]);
       }),
-      onServerInfoUpdate(setServerInfo),
+      onServerInfoUpdate(info => {
+        setServerInfo(info);
+        upsertServerStatus({ players: info.players ?? [] })
+      }),
     ]);
 
     return () => { listeners.then(fns => fns.forEach(fn => fn())); };
   }, []);
+
+  // Re-read the players table on load and whenever the host reports new info
+  useEffect(() => {
+    getServerStatus().then(status => setPlayers(status?.players ?? []));
+  }, [serverInfo]);
 
   async function toggleHost() {
     if (!gameDirectory) return;
@@ -112,7 +112,7 @@ export default function HostPage() {
 
       <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-[3fr_2fr] gap-4">
         <MatchSettings running={running} />
-        <ModuleSkeleton title="Players" className="col-span-2" />
+        <Players players={players} className="col-span-2" />
         <Console lines={logs} className="col-span-3" />
       </div>
 
