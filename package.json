@@ -1,0 +1,44 @@
+{
+  "name": "atlas",
+  "author": "clarioncorp",
+  "private": true,
+  "version": "1.0.0-preview",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "tauri": "tauri",
+    "studio": "drizzle-kit studio",
+    "gen": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-fs": "^2.7.1",
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.1",
+    "framer-motion": "^12.36.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.18.4",
+    "tailwind-merge": "^3.7.0",
+    "tauri-plugin-libsql-api": "^0.1.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.4.27",
+    "clsx": "^2.1.1",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
+  }
+}
