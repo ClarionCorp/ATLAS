@@ -8,7 +8,7 @@ function App() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pt-12">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <div className="flex">
         <main className="flex-1">
           <Outlet context={{

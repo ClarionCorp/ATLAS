@@ -33,9 +33,14 @@ export async function upsertClientOptions(
   }).run();
 }
 
+export async function getHostOptions() {
+  const rows = await db.select().from(hostOptions).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function upsertHostOptions(
   data: Partial<Pick<typeof hostOptions.$inferInsert,
-    'modVersion'
+    'modVersion' | 'maxFps' | 'minPlayers' | 'maxSets' | 'maxRounds' | 'mapId' | 'queueId' | 'additionalOpts'
   >>
 ) {
   return db.insert(hostOptions).values({ id: 1, ...data }).onConflictDoUpdate({
