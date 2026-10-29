@@ -58,7 +58,7 @@ export async function stopHostGame() {
   await sendHostCommand('forcestop'); // disconnect all players and shutdown session
   await clearServerPlayers();
   await sleep(3000);
-  invoke<void>('stop_host'); // kill application pid
+  await invoke<void>('stop_host'); // kill application pid
 }
 
 // Returns the host's PID if it's running, otherwise null

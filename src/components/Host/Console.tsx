@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { CaretRightIcon } from '@phosphor-icons/react';
 import { sendHostCommand } from '../../core/utilities/launch';
 
@@ -7,6 +7,38 @@ interface ConsoleProps {
   running: boolean;
   onLocalLine?: (line: string) => void; // echoes sent commands and errors into the log
   className?: string;
+}
+
+// Optional "[2026-10-29 21:24:18] " timestamp, then an optional "[Lua] " tag, then the message
+const LINE_PATTERN = /^(\[\d{4}-\d{2}-\d{2} [\d:.]+\]\s*)?(\[Lua\]\s*)?(.*)$/s;
+
+// The message's own leading tag, e.g. "[ATLAS]" or "[AiMi:Host]"
+const TAG_PATTERN = /^(\[[^\]]*\])(.*)$/s;
+
+function tagColor(tag: string) {
+  if (tag.startsWith('[ATLAS')) return 'text-amber-300';
+  if (tag.startsWith('[AiMi')) return 'text-pink-400';
+  return 'text-cyan-400';
+}
+
+function ConsoleLine({ line }: { line: string }) {
+  const [, timestamp, lua, message] = line.match(LINE_PATTERN) ?? [line, undefined, undefined, line];
+  const tagged = message.match(TAG_PATTERN);
+
+  return (
+    <div>
+      {(timestamp || lua) && <span className="text-zinc-500">{timestamp}{lua}</span>}
+      {tagged ? (
+        <>
+          <span className={tagColor(tagged[1])}>{tagged[1]}</span>
+          <span className="text-zinc-300">{tagged[2]}</span>
+        </>
+      ) : (
+        // No tag, probably app commands
+        <span className="text-cyan-400">{message}</span>
+      )}
+    </div>
+  );
 }
 
 // Splits on whitespace, keeping "quoted args" or 'quoted args' together
@@ -19,21 +51,32 @@ function parseCommand(input: string) {
 export function Console({ lines, running, onLocalLine, className }: ConsoleProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
+  const lastScrollTop = useRef(0);
 
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
 
-  // Only auto-scroll if the user hasn't scrolled up to read something
+  // Only auto-scroll if the user hasn't scrolled up to read something.
+  // Scroll events land after new lines may have grown the content, so "not at the bottom" alone isn't proof the user scrolled.
+  // Only an upward move counts. Reaching the bottom again re-enables following.
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 16;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 16) {
+      stickToBottom.current = true;
+    } else if (el.scrollTop < lastScrollTop.current) {
+      stickToBottom.current = false;
+    }
+    lastScrollTop.current = el.scrollTop;
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
+    if (el && stickToBottom.current) {
+      el.scrollTop = el.scrollHeight;
+      lastScrollTop.current = el.scrollTop;
+    }
   }, [lines]);
 
   async function submit() {
@@ -88,7 +131,7 @@ export function Console({ lines, running, onLocalLine, className }: ConsoleProps
         >
           {lines.length === 0
             ? <span className="text-zinc-700">Server is offline.</span>
-            : lines.map((line, i) => <div key={i}>{line}</div>)
+            : lines.map((line, i) => <ConsoleLine key={i} line={line} />)
           }
         </div>
 
