@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { Server } from "../../types/server";
 
 // Only one row that stores basic app settings
 export const appSettings = sqliteTable("appSettings", {
@@ -36,5 +37,15 @@ export const clientOptions = sqliteTable("clientOptions", {
   modVersion: text("mod_version"),
 
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(new Date()).$onUpdateFn(() => new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(new Date()),
+})
+
+
+export const serverStatus = sqliteTable("serverStatus", {
+  id: integer("id").primaryKey(),
+
+  state: text("state").$type<Server.Status>().notNull().default('OFFLINE'),
+  players: text("players", { mode: 'json' }), // morph into a type later
+
   createdAt: integer("created_at", { mode: "timestamp" }).default(new Date()),
 })
