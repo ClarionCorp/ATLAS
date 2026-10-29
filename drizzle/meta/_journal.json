@@ -43,6 +43,20 @@
       "when": 1793302540100,
       "tag": "0005_empty_triathlon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793306005329,
+      "tag": "0006_fix_quoted_column_copies",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793306095110,
+      "tag": "0007_goofy_the_executioner",
+      "breakpoints": true
     }
   ]
 }
