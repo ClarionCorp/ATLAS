@@ -18,6 +18,8 @@ export const hostOptions = sqliteTable("hostOptions", {
   queueId: text("queue_id"), // "Normal"
 
   showLog: integer("show_log", { mode: 'boolean' }).notNull().default(false),
+  additionalOpts: text("additional_launch_opts"),
+  modVersion: text("mod_version"),
 
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(new Date()).$onUpdateFn(() => new Date()),
   createdAt: integer("created_at", { mode: "timestamp" }).default(new Date()),

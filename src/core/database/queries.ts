@@ -17,8 +17,28 @@ export async function upsertAppSettings(
   }).run();
 }
 
+export async function upsertClientOptions(
+  data: Partial<Pick<typeof clientOptions.$inferInsert,
+    'modVersion'
+  >>
+) {
+  return db.insert(clientOptions).values({ id: 1, ...data }).onConflictDoUpdate({
+    target: clientOptions.id,
+    set: data,
+  }).run();
+}
+
+export async function upsertHostOptions(
+  data: Partial<Pick<typeof hostOptions.$inferInsert,
+    'modVersion'
+  >>
+) {
+  return db.insert(hostOptions).values({ id: 1, ...data }).onConflictDoUpdate({
+    target: hostOptions.id,
+    set: data,
+  }).run();
+}
+
 export async function ensureTables() {
   await db.insert(appSettings).values({ id: 1 }).onConflictDoNothing({ target: appSettings.id }).run();
-  await db.insert(hostOptions).values({ id: 1 }).onConflictDoNothing({ target: hostOptions.id }).run();
-  await db.insert(clientOptions).values({ id: 1 }).onConflictDoNothing({ target: clientOptions.id }).run();
 }

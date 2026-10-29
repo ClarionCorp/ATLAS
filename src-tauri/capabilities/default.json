@@ -9,14 +9,20 @@
     "opener:default",
     "fs:default",
     "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-write-file",
+    { "identifier": "fs:scope", "allow": [{ "path": "**" }] },
+    "dialog:allow-open",
     {
-      "identifier": "fs:allow-exists",
+      "identifier": "http:default",
       "allow": [
-        { "path": "C:/Program Files (x86)/Steam/steamapps/common/OmegaStrikers/OmegaStrikers.exe" },
-        { "path": "$HOME/.steam/steam/steamapps/common/OmegaStrikers/OmegaStrikers.exe" }
+        { "url": "https://github.com/*" },
+        { "url": "https://objects.githubusercontent.com/*" },
+        { "url": "https://release-assets.githubusercontent.com/*" }
       ]
     },
-    "dialog:allow-open",
     "libsql:default"
   ]
 }
