@@ -1,5 +1,5 @@
 local ModName = "ATLASClientMod"
-local ModVersion = "1.0.0"
+local ModVersion = "1.0.1"
 
 print(string.format("\n=== %s v%s Loaded ===\n", ModName, ModVersion))
 
@@ -114,3 +114,33 @@ for _, command in ipairs({ "join", "connect" }) do
         return true
     end)
 end
+
+-- -atlasJoin=<ip[:port]>: join once the menu is up and the profile is cached.
+local AUTO_JOIN_POLL_MS = 1000
+local AUTO_JOIN_TIMEOUT_TRIES = 60
+
+local function AutoJoinAddress()
+    local cmdLine = LANClient_GetCommandLine and LANClient_GetCommandLine() or ""
+    return cmdLine:lower():match("%-atlasjoin=([%w%.%-:]+)")
+end
+
+local function StartAutoJoin(address)
+    Log("Auto-joining %s once logged in", address)
+    local tries, ready = 0, false
+    LoopAsync(AUTO_JOIN_POLL_MS, function()
+        tries = tries + 1
+        if ready or tries > AUTO_JOIN_TIMEOUT_TRIES then
+            if not ready then Log("Auto-join: no profile after %ds, joining anyway", AUTO_JOIN_TIMEOUT_TRIES) end
+            -- Called from here, not from the game-thread check below: Join queues its own game-thread action.
+            Join(address)
+            return true
+        end
+        ExecuteInGameThread(function()
+            if not ready and GetLocalPlayerController() and LocalProfile() then ready = true end
+        end)
+        return false
+    end)
+end
+
+local autoJoinAddress = AutoJoinAddress()
+if autoJoinAddress then StartAutoJoin(autoJoinAddress) end
