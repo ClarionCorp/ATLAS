@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793287044750,
+      "tag": "0000_damp_the_watchers",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793289217315,
+      "tag": "0001_loving_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793289852617,
+      "tag": "0002_slow_carlie_cooper",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793291735541,
+      "tag": "0003_amazing_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793302331869,
+      "tag": "0004_nice_gwen_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793302540100,
+      "tag": "0005_empty_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793306005329,
+      "tag": "0006_fix_quoted_column_copies",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793306095110,
+      "tag": "0007_goofy_the_executioner",
+      "breakpoints": true
+    }
+  ]
+}

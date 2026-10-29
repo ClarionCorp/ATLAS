@@ -17,7 +17,7 @@ const baseInputStyles = cn(
   'transition-[border-color,box-shadow] duration-200',
   'outline-none caret-zinc-200',
   'hover:border-zinc-700',
-  'focus:border-zinc-400 focus:ring-3 focus:ring-zinc-400/20',
+  'focus:border-zinc-600',
   'disabled:opacity-40 disabled:cursor-not-allowed'
 );
 

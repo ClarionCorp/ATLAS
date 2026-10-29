@@ -7,6 +7,8 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createHashRouter } from "react-router-dom";
 import { ToastProvider } from './components/UI/Toast';
 import HomePage from './pages/Home';
+import ClientPage from './pages/Client';
+import HostPage from './pages/Host';
 import ErrorBoundary from './components/Navigation/ErrorBoundry';
 
 const router = createHashRouter([
@@ -16,6 +18,8 @@ const router = createHashRouter([
     errorElement: <ErrorBoundary />,
     children: [
       { index: true,              element: <HomePage /> },
+      { path: "client",           element: <ClientPage /> },
+      { path: "host",             element: <HostPage /> },
     ],
   },
 ]);
